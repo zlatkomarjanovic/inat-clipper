@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' media: data:; media-src 'self' media: blob:"
+    />
+    <title>Inat Clipper</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <span class="mark"></span>
+      <span class="brand">Inat Clipper</span>
+    </header>
+
+    <main>
+      <form class="panel" id="form">
+        <section>
+          <p class="label">Source</p>
+          <div class="switch" role="tablist">
+            <button type="button" id="tab-youtube" class="active">YouTube</button>
+            <button type="button" id="tab-local">Local file</button>
+          </div>
+          <label class="url-wrap" id="youtube-wrap">
+            <span class="sr">YouTube link</span>
+            <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" spellcheck="false" />
+          </label>
+          <div class="local-wrap" id="local-wrap" hidden>
+            <button type="button" class="ghost" id="choose">Choose video</button>
+            <p class="file" id="file-label">No video chosen</p>
+          </div>
+        </section>
+
+        <section>
+          <p class="label">Output</p>
+          <div class="folder">
+            <span id="folder-label">Choose a folder</span>
+            <button type="button" id="browse">Browse</button>
+          </div>
+          <label class="name-wrap">
+            <span class="sr">Clip name</span>
+            <input id="name" type="text" maxlength="80" placeholder="Name this batch" autocomplete="off" />
+          </label>
+        </section>
+
+        <section>
+          <p class="label">Clipping</p>
+          <div class="modes">
+            <button type="button" class="mode active" id="mode-basic">
+              <strong>Basic</strong>
+              <span>Clean cuts, cropped to the frame below.</span>
+            </button>
+            <button type="button" class="mode" id="mode-advanced">
+              <strong>Advanced</strong>
+              <span>Same crop, with the spoken line burned on.</span>
+            </button>
+          </div>
+          <p class="hint">Either way, the transcript is saved next to the clips.</p>
+        </section>
+
+        <section>
+          <p class="label">Frame</p>
+          <div class="presets" id="presets">
+            <button type="button" class="preset active" data-preset="9:16" data-w="1080" data-h="1920">9:16</button>
+            <button type="button" class="preset" data-preset="4:5" data-w="1080" data-h="1350">4:5</button>
+            <button type="button" class="preset" data-preset="1:1" data-w="1080" data-h="1080">1:1</button>
+            <button type="button" class="preset" data-preset="16:9" data-w="1920" data-h="1080">16:9</button>
+          </div>
+          <div class="dims">
+            <input id="out-w" type="number" min="240" max="2160" step="2" value="1080" />
+            <span>x</span>
+            <input id="out-h" type="number" min="240" max="3840" step="2" value="1920" />
+          </div>
+          <p class="hint">Shorts, Reels, and TikTok use 9:16. The orange frame follows the action.</p>
+        </section>
+
+        <div class="action-row">
+          <button type="submit" class="primary" id="start">Find clips</button>
+          <button type="button" class="ghost" id="manual">Clip manually</button>
+        </div>
+        <p class="hint">Find clips uses AI. Clip manually skips it and lets you mark the moments yourself.</p>
+        <section class="history-block">
+          <p class="label">History</p>
+          <div id="history" class="history"></div>
+        </section>
+        <p class="form-error" id="form-error" hidden></p>
+      </form>
+
+      <section class="stage">
+        <div class="stage-head">
+          <div>
+            <p class="label">This run</p>
+            <h1 id="status">Ready</h1>
+          </div>
+          <button type="button" class="text-btn" id="open-folder" hidden>Open folder</button>
+        </div>
+        <div class="bar" id="bar" hidden><span></span></div>
+        <ol class="steps" id="steps"></ol>
+        <p class="empty" id="empty">Find the clips. They line up on the timeline, snapped together, ready to trim.</p>
+        <div class="error" id="error" hidden></div>
+        <div class="player" id="editor" hidden>
+          <div class="crop-stage" id="crop-stage">
+            <div class="crop-canvas" id="crop-canvas">
+              <video id="preview" playsinline preload="auto"></video>
+              <div class="crop-box" id="crop-box" data-corner="br" data-place="top">
+                <div class="layer logo-layer" id="logo-layer" hidden>
+                  <img class="live-logo" id="live-logo" alt="" />
+                  <i class="grip" data-logo="se"></i>
+                </div>
+                <div class="layer text-layer" id="wm-layer" hidden>
+                  <span class="live-wm" id="live-wm"></span>
+                </div>
+                <div class="layer text-layer title-layer" id="title-layer" hidden>
+                  <span class="live-title" id="live-title"></span>
+                </div>
+                <i class="grip" data-resize="nw"></i>
+                <i class="grip" data-resize="ne"></i>
+                <i class="grip" data-resize="sw"></i>
+                <i class="grip" data-resize="se"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="results" id="results" hidden></div>
+      </section>
+      <aside class="inspector" id="inspector">
+        <p class="label">Selected cut</p>
+        <input id="clip-title" type="text" maxlength="80" placeholder="Cut title" autocomplete="off" />
+        <p class="clip-readout" id="clip-readout">Select a cut on the timeline.</p>
+        <div class="times">
+          <label>In <input id="in-time" type="text" spellcheck="false" /></label>
+          <label>Out <input id="out-time" type="text" spellcheck="false" /></label>
+        </div>
+        <button type="button" class="ghost" id="remove-clip">Remove cut</button>
+        <label class="check"><input type="checkbox" id="follow" checked /> Follow the action</label>
+        <p class="hint" id="follow-note">The orange frame stays on the person.</p>
+        <label class="check"><input type="checkbox" id="mix" /> Mix cuts into one video</label>
+        <p class="hint">Stitches the timeline, in this order, into one extra video.</p>
+        <div class="overlay-fields">
+          <label>Watermark <input id="watermark" maxlength="40" placeholder="@inat" autocomplete="off" /></label>
+          <label>Corner
+            <select id="watermark-corner">
+              <option value="br">Bottom right</option>
+              <option value="bl">Bottom left</option>
+              <option value="tr">Top right</option>
+              <option value="tl">Top left</option>
+            </select>
+          </label>
+          <div class="logo-row">
+            <button type="button" class="ghost" id="watermark-image">Logo image</button>
+            <button type="button" class="text-btn" id="watermark-clear" hidden>Clear</button>
+          </div>
+          <p class="file" id="watermark-file">No logo</p>
+          <label>Text on video <input id="overlay-text" maxlength="80" placeholder="Headline" autocomplete="off" /></label>
+          <label>Text place
+            <select id="overlay-place">
+              <option value="top">Top</option>
+              <option value="middle">Center</option>
+              <option value="bottom">Bottom</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">Drag the logo or the text on the preview to place it. Drag the logo corner to resize it.</p>
+      </aside>
+      <footer class="dock" id="dock">
+        <div class="dock-bar">
+          <button type="button" id="play">Play</button>
+          <button type="button" id="add-clip">Add clip</button>
+          <span id="time-readout">0:00 / 0:00</span>
+          <span class="dock-note">Drag a cut to reorder. Drag its edge to trim. Cuts stay under 60 seconds and never overlap.</span>
+          <div class="zoom-row">
+            <button type="button" id="zoom-out" aria-label="Zoom out">-</button>
+            <input id="zoom" type="range" min="1" max="24" step="0.1" value="1" />
+            <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+            <span id="zoom-label">1.0x</span>
+          </div>
+          <button type="button" class="export" id="export">Export all</button>
+        </div>
+        <div class="timeline-body">
+          <div class="track-label">Video</div>
+          <div class="timeline-scroll" id="timeline-scroll">
+            <div class="timeline-canvas" id="timeline-canvas">
+              <div class="ruler" id="ruler"></div>
+              <div class="track" id="track"></div>
+              <div class="playhead" id="playhead"></div>
+              <div class="snap-line" id="snap-line" hidden></div>
+            </div>
+          </div>
+        </div>
+        <div class="picker" id="picker" hidden>
+          <div class="dock-bar">
+            <strong>Full video</strong>
+            <span id="picker-readout">0:00</span>
+            <span class="dock-note">Drag the cut across the video. Play it to check the moment. 60 seconds max.</span>
+            <button type="button" id="picker-play">Play</button>
+            <button type="button" id="picker-cancel">Cancel</button>
+            <button type="button" class="export" id="picker-done">Use this moment</button>
+          </div>
+          <div class="timeline-body">
+            <div class="track-label">Source</div>
+            <div class="timeline-scroll" id="picker-scroll">
+              <div class="timeline-canvas" id="picker-canvas">
+                <div class="ruler" id="picker-ruler"></div>
+                <div class="track" id="picker-track">
+                  <div class="filmstrip" id="picker-film"></div>
+                  <div class="film-shade" id="picker-shade-left"></div>
+                  <div class="film-shade" id="picker-shade-right"></div>
+                </div>
+                <div class="playhead" id="picker-playhead"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+      <div class="menu" id="menu" hidden>
+        <button type="button" data-menu="pick">Pick a different moment</button>
+        <button type="button" data-menu="add">Add a clip</button>
+        <button type="button" data-menu="export">Export this clip</button>
+        <button type="button" data-menu="play">Play from here</button>
+        <button type="button" data-menu="remove">Remove cut</button>
+      </div>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

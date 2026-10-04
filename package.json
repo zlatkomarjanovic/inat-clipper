@@ -1,0 +1,23 @@
+{
+  "name": "inat-clipper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Windows clip app for Inat Bosanski (OpenRouter + Gemini + FFmpeg)",
+  "main": "desktop/main.js",
+  "scripts": {
+    "clip": "tsx src/cli.ts",
+    "setup": "tsx src/setup-cli.ts",
+    "app": "electron ."
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "electron": "^44.5.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5"
+  }
+}
